@@ -1,35 +1,35 @@
 export const PubSub = () => {
-  const subscribers: { [event: string]: Function[] } = {};
+    const subscribers: { [event: string]: Function[] } = {};
 
-  function emit(event: string, data: any) {
-    for (let i = 0; i < subscribers[event].length; i++) {
-      if (typeof subscribers[event][i] === "function") {
-        subscribers[event][i](data);
-      } else {
-        unsubscribe(event, subscribers[event][i]);
-      }
-    }
-  }
-
-  function subscribe(event: string, cb: Function): () => void {
-    const subs = subscribers[event];
-    if (!subscribers[event]) {
-      subscribers[event] = [];
+    function emit(event: string, data: any) {
+        for (let i = 0; i < subscribers[event].length; i++) {
+            if (typeof subscribers[event][i] === 'function') {
+                subscribers[event][i](data);
+            } else {
+                unsubscribe(event, subscribers[event][i]);
+            }
+        }
     }
 
-    subscribers[event].push(cb);
+    function subscribe(event: string, cb: Function): () => void {
+        const subs = subscribers[event];
+        if (!subscribers[event]) {
+            subscribers[event] = [];
+        }
 
-    return () => {
-      unsubscribe(event, cb);
-    };
-  }
+        subscribers[event].push(cb);
 
-  function unsubscribe(event, cb) {
-    const subs = subscribers[event];
-    if (subs) {
-      subs.splice(subs.indexOf(cb), 1);
+        return () => {
+            unsubscribe(event, cb);
+        };
     }
-  }
 
-  return { emit, subscribe, unsubscribe };
+    function unsubscribe(event, cb) {
+        const subs = subscribers[event];
+        if (subs) {
+            subs.splice(subs.indexOf(cb), 1);
+        }
+    }
+
+    return { emit, subscribe, unsubscribe };
 };

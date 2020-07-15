@@ -1,66 +1,95 @@
-import { PubSub } from "../utils/pub-sub";
-import { getBridgeIframe } from "../utils/iframe-bridge";
-import { uuid } from "../utils/uuid";
+import { IExtensionMessage, IExtensionResponse } from '../types';
+import { PubSub } from '../utils/pub-sub';
+import { getBridgeIframe } from '../utils/iframe-bridge';
+import { uuid } from '../utils/uuid';
 
-const BRIDGE_URL = "https://api.moonlet.io/";
+const BRIDGE_URL = 'https://api.moonlet.io/';
 
 // trigger iframe injection
 getBridgeIframe(BRIDGE_URL);
 
 export abstract class GenericProvider<O = any> {
-  protected pubSub = PubSub();
-  protected blockchain: string;
-  protected options: O;
+    protected pubSub = PubSub();
+    protected blockchain: string;
+    protected options: O;
 
-  constructor(blockchain: string, options?: O) {
-    this.blockchain = blockchain;
-    this.options = options;
+    constructor(blockchain: string, options?: O) {
+        this.blockchain = blockchain;
+        this.options = options;
 
-    window.addEventListener("message", (event: MessageEvent) => {
-      this.onBridgeMessage(event);
-    });
-  }
+        window.addEventListener('message', (event: MessageEvent) => {
+            this.onBridgeMessage(event);
+        });
+    }
 
-  protected abstract onBridgeMessage(event: MessageEvent);
+    protected abstract onBridgeMessage(event: MessageEvent);
 
-  request(method: string, params: any[]): Promise<any> {
-    return new Promise(async (resolve, reject) => {
-      const requestId = uuid();
-      // todo: timeout implementation
-      const onMessage = (event: MessageEvent) => {
-        // todo: check message origin
+    protected request(
+        method: string,
+        params: any[],
+        timeout: number = 0
+    ): Promise<IExtensionResponse> {
+        return new Promise(async (resolve, reject) => {
+            let timeoutInstance;
+            const requestId = uuid();
+            const requestMessage: IExtensionMessage = {
+                id: requestId,
+                target: 'MOONLET_EXTENSION',
+                type: 'REQUEST',
+                request: {
+                    controller: 'ProvidersController',
+                    method: 'rpc',
+                    blockchain: this.blockchain,
+                    params: [
+                        {
+                            method,
+                            params,
+                        },
+                    ],
+                },
+            };
 
-        const data = (event || {}).data || {};
-        if (data.id === requestId && data.type === "MOONLET_RPC_RESPONSE") {
-          if (data.success) {
-            resolve(data.response);
-          } else {
-            reject(data.response);
-          }
-          window.removeEventListener("message", onMessage);
-        }
-      };
-      window.addEventListener("message", onMessage);
+            const onResponseMessage = (event: MessageEvent) => {
+                const message: IExtensionMessage = event?.data;
 
-      const iframe = await getBridgeIframe(BRIDGE_URL);
-      iframe.contentWindow.postMessage(
-        {
-          id: requestId,
-          type: "MOONLET_RPC_REQUEST",
-          blockchain: this.blockchain,
-          method,
-          params,
-        },
-        BRIDGE_URL
-      );
-    });
-  }
+                // todo: check message origin
 
-  subscribe(event: string, subscriber: Function) {
-    return this.pubSub.subscribe(event, subscriber);
-  }
+                if (message.id === requestId && message.type === 'RESPONSE' && message.response) {
+                    if (message.response.error) {
+                        reject(message.response);
+                    } else {
+                        resolve(message.response);
+                    }
+                    clearTimeout(timeoutInstance);
+                    window.removeEventListener('message', onResponseMessage);
+                }
+            };
+            window.addEventListener('message', onResponseMessage);
 
-  unsubscribe(event, subscriber) {
-    return this.pubSub.unsubscribe(event, subscriber);
-  }
+            if (timeout > 0) {
+                timeoutInstance = setTimeout(() => {
+                    window.removeEventListener('message', onResponseMessage);
+                    reject({
+                        ...requestMessage,
+                        type: 'RESPONSE',
+                        response: {
+                            error: 'TIMEOUT',
+                            message: `Timeout exceeded for request with id: ${requestId}`,
+                        },
+                    } as IExtensionMessage);
+                }, timeout);
+            }
+
+            const iframe = await getBridgeIframe(BRIDGE_URL);
+            iframe.contentWindow.postMessage(requestMessage, BRIDGE_URL);
+        });
+    }
+
+    protected subscribe(event: string, subscriber: Function) {
+        return this.pubSub.subscribe(event, subscriber);
+    }
+
+    protected unsubscribe(event, subscriber) {
+        return this.pubSub.unsubscribe(event, subscriber);
+    }
 }
