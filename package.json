@@ -5,14 +5,17 @@
     "main": "index.js",
     "scripts": {
         "dev:zilliqa": "microbundle watch -i src/providers/zilliqa.ts -o zilliqa.js --no-pkg-main -f umd",
-        "build:zilliqa": "microbundle -i src/providers/zilliqa.ts -o zilliqa.js",
-        "build": "rm -rf dist && npm run build:zilliqa",
+        "build:zilliqa": "microbundle -i src/providers/zilliqa.ts -o dist/zilliqa.js",
+        "build": "rm -rf dist && mkdir dist && cp -r src dist/ && cp package.json dist/ && npm run build:zilliqa",
         "test": "echo \"Error: no test specified\" && exit 1"
     },
     "author": "Tibi K. <tibi@moonlet.io>",
     "license": "ISC",
     "devDependencies": {
-        "microbundle": "^0.12.2",
+        "microbundle": "^0.12.4",
         "typescript": "^3.9.6"
+    },
+    "dependencies": {
+        "@zilliqa-js/core": "^1.0.0-alpha.1"
     }
 }

@@ -1,26 +1,52 @@
-import { IExtensionResponse } from '../types';
-import { GenericProvider } from './generic';
+import { extensionRequest } from '../utils/extension-comm';
+import { BaseProvider } from '@zilliqa-js/core/src/providers/base';
+import { composeMiddleware } from '@zilliqa-js/core/src/util';
 
-export class MoonletZilliqaProvider extends GenericProvider {
-    constructor(options: any) {
-        super('ZILLIQA', options);
+/**
+ * events
+ * chainChanged, accountsChanged, message
+ */
+interface P {
+    currentAccount: string;
+}
+
+export class MoonletZilliqaProvider extends BaseProvider {
+    public currentAccount: string;
+
+    public events = ['chainChange'];
+
+    connect(): Promise<string[]> {
+        return this.send('GetAccount').then((res) => [res.result]);
     }
 
-    protected onBridgeMessage(event: MessageEvent) {}
+    isConnected(): boolean {
+        return false;
+    }
 
-    public async send(method, ...params) {
-        return this.request(method, params).then((res: IExtensionResponse) => {
-            let data = res.data;
-            // console.log(res);
-            if (res.error) {
-                data = {
-                    jsonrpc: '2.0',
-                    error: {
-                        ...res,
-                    },
-                };
-            }
-            return data;
-        });
+    constructor() {
+        super('');
+    }
+
+    public send(method, ...params) {
+        const [tReq, tRes] = this.getMiddleware(method);
+        const reqMiddleware = composeMiddleware(...tReq);
+        const resMiddleware = composeMiddleware(...tRes);
+        // console.log(tReq, tRes);
+        if (method === 'CreateTransaction') {
+            params[0].version = params[0].version || '';
+            params[0].nonce = params[0].nonce || '';
+            params[0].signature = params[0].signature || '';
+        }
+        const req = reqMiddleware(this.buildPayload(method, params));
+        return extensionRequest('ZILLIQA', req.payload.method, req.payload.params)
+            .then((res) => res.data)
+            .then(resMiddleware);
+    }
+
+    buildPayload(method, params): any {
+        return {
+            url: '',
+            payload: { id: 1, jsonrpc: '2.0', method, params },
+        };
     }
 }
