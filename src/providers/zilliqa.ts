@@ -10,7 +10,7 @@ interface P {
     currentAccount: string;
 }
 
-export class MoonletZilliqaProvider extends BaseProvider {
+export default class MoonletZilliqaProvider extends BaseProvider {
     public currentAccount: string;
 
     public events = ['chainChange'];
