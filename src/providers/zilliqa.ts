@@ -1,5 +1,5 @@
 import { extensionRequest } from '../utils/extension-comm';
-import { BaseProvider } from '@zilliqa-js/core/src/providers/base';
+import { ZilliqaBaseProvider } from './zilliqa-base-provider';
 import { composeMiddleware } from '@zilliqa-js/core/src/util';
 
 /**
@@ -10,7 +10,7 @@ interface P {
     currentAccount: string;
 }
 
-export default class MoonletZilliqaProvider extends BaseProvider {
+export default class MoonletZilliqaProvider extends ZilliqaBaseProvider {
     public currentAccount: string;
 
     public events = ['chainChange'];

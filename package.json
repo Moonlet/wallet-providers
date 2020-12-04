@@ -1,11 +1,11 @@
 {
     "name": "@moonlet/providers",
-    "version": "0.1.0",
+    "version": "0.1.2",
     "description": "Moonlet Wallet providers for all supported blockchains",
     "main": "index.js",
     "private": false,
     "scripts": {
-        "dev:zilliqa": "microbundle --name MoonletZilliqaProvider watch -i src/providers/zilliqa.ts -o zilliqa.js --no-pkg-main -f umd",
+        "dev:zilliqa": "microbundle --name MoonletZilliqaProvider watch -i src/providers/zilliqa.ts -o zilliqa.js",
         "build:zilliqa": "microbundle --name MoonletZilliqaProvider -i src/providers/zilliqa.ts -o dist/zilliqa.js",
         "build": "rm -rf dist && mkdir dist && cp -r src dist/ && cp package.json dist/ && npm run build:zilliqa",
         "test": "echo \"Error: no test specified\" && exit 1"
