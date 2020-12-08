@@ -28,7 +28,7 @@ export function getBridgeIframe(url: string, timeout: number = 5000): Promise<HT
 
                 // iframe load completed
                 i.onload = () => {
-                    console.log('iframe successfully loaded');
+                    // console.log('iframe successfully loaded');
                     iframe = i;
                     iframeLoadInProgress = false;
                     clearTimeout(timeoutInstance);

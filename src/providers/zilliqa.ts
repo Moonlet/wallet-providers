@@ -23,19 +23,34 @@ export default class MoonletZilliqaProvider extends ZilliqaBaseProvider {
             switch (event) {
                 case ExtensionEvents.DEFAULT_ACCOUNT_CHANGED:
                     this.handleAccountChangeEvent();
+                    break;
+                case ExtensionEvents.CURRENT_NETWORK_CHANGED:
+                    this.handleNetworkChangeEvent();
+                    break;
             }
         });
     }
 
-    connect(): Promise<string[]> {
-        return this.send('GetAccount').then((res) => {
+    async connect(): Promise<string[]> {
+        try {
+            const accRes = await this.send('GetAccount');
             this._eventEmitter.emit(ZilliqaProviderEvents.connected, {
-                defaultAccount: res.result,
+                defaultAccount: accRes.result,
             });
-            this.defaultAccount = res.result;
+            this.defaultAccount = accRes.result;
+
+            const netRes = await this.send('GetNetworkId');
+            const net = parseInt(netRes.result, 10);
+            this.currentNetwork = 1;
+            if (!isNaN(net)) {
+                this.currentNetwork = net;
+            }
+
             this._connected = true;
-            return [res.result];
-        });
+            return [accRes.result];
+        } catch (e) {
+            return Promise.reject(e);
+        }
     }
 
     isConnected(): boolean {
@@ -84,6 +99,20 @@ export default class MoonletZilliqaProvider extends ZilliqaBaseProvider {
                     this.defaultAccount = res.result;
                     this._eventEmitter.emit(ZilliqaProviderEvents.defaultAccountChanged, {
                         account: res.result,
+                    });
+                }
+            });
+        }
+    }
+
+    private handleNetworkChangeEvent() {
+        if (this._connected) {
+            this.send('GetNetworkId').then((res) => {
+                const net = parseInt(res.result, 10);
+                if (!isNaN(net) && this.currentNetwork !== net) {
+                    this.currentNetwork = net;
+                    this._eventEmitter.emit(ZilliqaProviderEvents.currentNetworkChanged, {
+                        chainId: net,
                     });
                 }
             });
