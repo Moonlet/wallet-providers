@@ -1,30 +1,45 @@
-import { extensionRequest } from '../utils/extension-comm';
+import { PubSub } from './../utils/pub-sub';
+import { ExtensionEvents } from '../../src/types';
+import { extensionRequest, onExtensionEvent } from '../utils/extension-comm';
 import { ZilliqaBaseProvider } from './zilliqa-base-provider';
 import { composeMiddleware } from '@zilliqa-js/core/src/util';
 
-/**
- * events
- * chainChanged, accountsChanged, message
- */
-interface P {
-    currentAccount: string;
+enum ZilliqaProviderEvents {
+    connected = 'connected',
+    currentNetworkChanged = 'currentNetworkChanged',
+    defaultAccountChanged = 'defaultAccountChanged',
 }
 
 export default class MoonletZilliqaProvider extends ZilliqaBaseProvider {
-    public currentAccount: string;
+    private _connected: boolean = false;
+    private _eventEmitter = PubSub();
+    currentNetwork: number;
+    defaultAccount: string;
 
-    public events = ['chainChange'];
+    constructor() {
+        super('');
+
+        onExtensionEvent(({ event, data }) => {
+            switch (event) {
+                case ExtensionEvents.DEFAULT_ACCOUNT_CHANGED:
+                    this.handleAccountChangeEvent();
+            }
+        });
+    }
 
     connect(): Promise<string[]> {
-        return this.send('GetAccount').then((res) => [res.result]);
+        return this.send('GetAccount').then((res) => {
+            this._eventEmitter.emit(ZilliqaProviderEvents.connected, {
+                defaultAccount: res.result,
+            });
+            this.defaultAccount = res.result;
+            this._connected = true;
+            return [res.result];
+        });
     }
 
     isConnected(): boolean {
         return false;
-    }
-
-    constructor() {
-        super('');
     }
 
     public send(method, ...params) {
@@ -48,5 +63,30 @@ export default class MoonletZilliqaProvider extends ZilliqaBaseProvider {
             url: '',
             payload: { id: 1, jsonrpc: '2.0', method, params },
         };
+    }
+
+    signMessage(message) {
+        return this.send('SignMessage', '', message);
+    }
+
+    async on(
+        event: ZilliqaProviderEvents,
+        cb: (data: { networkId?: number; accountAddress?: string }) => any
+    ) {
+        this._eventEmitter.subscribe(event, cb);
+    }
+
+    private handleAccountChangeEvent() {
+        // get current account and compare it with this.defaultAccount
+        if (this._connected) {
+            this.send('GetAccount').then((res) => {
+                if (this.defaultAccount !== res.result) {
+                    this.defaultAccount = res.result;
+                    this._eventEmitter.emit(ZilliqaProviderEvents.defaultAccountChanged, {
+                        account: res.result,
+                    });
+                }
+            });
+        }
     }
 }

@@ -59,3 +59,16 @@ export const extensionRequest = (
         iframe.contentWindow.postMessage(requestMessage, BRIDGE_URL);
     });
 };
+
+export const onExtensionEvent = (cb: (e) => any): (() => void) => {
+    const listenerFn = (event: MessageEvent) => {
+        const message: IExtensionMessage = event?.data;
+        // todo: check message origin
+        if (message.type === 'EVENT' && message.response && typeof cb === 'function') {
+            cb(message.response.data);
+        }
+    };
+    window.addEventListener('message', listenerFn);
+
+    return () => window.removeEventListener('message', listenerFn);
+};

@@ -2,11 +2,13 @@ export const PubSub = () => {
     const subscribers: { [event: string]: Function[] } = {};
 
     function emit(event: string, data: any) {
-        for (let i = 0; i < subscribers[event].length; i++) {
-            if (typeof subscribers[event][i] === 'function') {
-                subscribers[event][i](data);
-            } else {
-                unsubscribe(event, subscribers[event][i]);
+        if (subscribers[event]) {
+            for (let i = 0; i < subscribers[event].length; i++) {
+                if (typeof subscribers[event][i] === 'function') {
+                    subscribers[event][i](data);
+                } else {
+                    unsubscribe(event, subscribers[event][i]);
+                }
             }
         }
     }
