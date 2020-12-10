@@ -54,7 +54,7 @@ export default class MoonletZilliqaProvider extends ZilliqaBaseProvider {
     }
 
     isConnected(): boolean {
-        return false;
+        return this._connected;
     }
 
     public send(method, ...params) {

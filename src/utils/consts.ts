@@ -1,1 +1,1 @@
-export const BRIDGE_URL = 'https://api.moonlet.io/';
+export const BRIDGE_URL = 'https://fire.moonlet.io/static';

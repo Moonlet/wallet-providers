@@ -61,6 +61,8 @@ export const extensionRequest = (
 };
 
 export const onExtensionEvent = (cb: (e) => any): (() => void) => {
+    // connect to the bridge
+    getBridgeIframe(BRIDGE_URL);
     const listenerFn = (event: MessageEvent) => {
         const message: IExtensionMessage = event?.data;
         // todo: check message origin
