@@ -1,6 +1,6 @@
 {
     "name": "@moonlet/providers",
-    "version": "0.1.2",
+    "version": "0.1.6",
     "description": "Moonlet Wallet providers for all supported blockchains",
     "main": "index.js",
     "private": false,
